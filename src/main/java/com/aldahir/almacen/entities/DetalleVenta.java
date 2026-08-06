@@ -53,7 +53,9 @@ public class DetalleVenta {
         validarDatos(cantidadProducto, precioProducto);
 
         validarCantidadProducto(cantidadProducto, cantidadProductoStock);
+    }
 
-
+    public BigDecimal obtenerSubtotal() {
+        return this.precioProducto.multiply(BigDecimal.valueOf(this.cantidadProducto));
     }
 }

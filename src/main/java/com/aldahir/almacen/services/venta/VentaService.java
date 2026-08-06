@@ -1,5 +1,6 @@
-package com.aldahir.almacen.services;
+package com.aldahir.almacen.services.venta;
 
+import com.aldahir.almacen.dto.ReporteVentasSucursalResponse;
 import com.aldahir.almacen.dto.ventas.VentaRequest;
 import com.aldahir.almacen.dto.ventas.VentaResponse;
 
@@ -15,4 +16,6 @@ public interface VentaService {
     VentaResponse registrar(VentaRequest request);
 
     VentaResponse cancelar(Long id);
+
+    List<ReporteVentasSucursalResponse> reporteVentasSucursales();
 }

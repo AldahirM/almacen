@@ -7,8 +7,11 @@ import com.aldahir.almacen.enums.Categoria;
 import com.aldahir.almacen.exceptions.RecursoNoEncontradoException;
 import com.aldahir.almacen.mappers.ProductoMapper;
 import com.aldahir.almacen.repositories.ProductoRepository;
+import com.aldahir.almacen.utils.EpecificacionesFiltros;
+import com.aldahir.almacen.utils.StringCustomUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,20 +32,29 @@ public class ProductoServiceImpl implements ProductoService {
     @Transactional(readOnly = true)
     public List<ProductoResponse> listar(
             String nombre,
-            String categgoria,
+            String categoria,
             BigDecimal precioMin,
             BigDecimal precioMax
     ) {
-
         log.info("Listando todos los productos");
-
-        return productoRepository.findAll().stream()
+        if (precioMin != null && precioMax != null) {
+            if (precioMin.compareTo(BigDecimal.ZERO) <= 0 || precioMax.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Los precios deben ser mayores a 0");
+            }
+        }
+        Categoria categoriaEnum = null;
+        if (categoria != null || categoria == "") {
+            categoriaEnum = obtenerCategoriaPorDescripcion(categoria);
+        }
+        Specification<Producto> spec = EpecificacionesFiltros.conFiltros(nombre, categoriaEnum, precioMin, precioMax);
+        return productoRepository.findAll(spec).stream()
                 .map(productoMapper::entidadAResponse)
                 // equivalente .map(producto -> productoMapper.entidadAResponse(producto))
                 .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProductoResponse obtenerPorId(Long id) {
         return productoMapper.entidadAResponse(obtenerProductoOException(id));
     }
