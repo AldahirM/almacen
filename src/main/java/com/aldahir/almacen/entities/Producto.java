@@ -68,4 +68,8 @@ public class Producto {
         this.precio = precio;
         this.cantidad = cantidad;
     }
+
+    public BigDecimal obtenerSubtotal(BigDecimal cantidad, BigDecimal precio){
+        return cantidad.multiply(precio);
+    }
 }

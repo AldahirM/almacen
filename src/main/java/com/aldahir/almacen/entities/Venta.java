@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,5 +55,11 @@ public class Venta {
         if (this.estadoVenta == EstadoVenta.CANCELADA)
             throw new IllegalStateException("La venta ya está cancelada");
         this.estadoVenta = EstadoVenta.CANCELADA;
+    }
+
+    public BigDecimal calcularTotal() {
+        return this.detalleVentas.stream()
+                .map(DetalleVenta::obtenerSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
