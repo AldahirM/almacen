@@ -44,7 +44,7 @@ public class VentaController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ventaService.registrar(ventaRequest));
     }
-    @PostMapping("/canceladas/{id}")
+    @DeleteMapping("/canceladas/{id}")
     public ResponseEntity<VentaResponse> cancelar(@PathVariable Long id){
         return ResponseEntity.ok(ventaService.cancelar(id));
     }
