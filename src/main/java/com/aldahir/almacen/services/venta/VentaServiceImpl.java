@@ -47,11 +47,7 @@ public class VentaServiceImpl implements VentaService {
         log.info("Listando ventas activas");
 
         return ventaRepository.findAllActivasOrderedByIdSucursal(EstadoVenta.REGISTRADA)
-                .stream().map(venta ->
-                        ventaMapper.entidadAResponse(
-                                venta,
-                                venta.calcularTotal()
-                        )
+                .stream().map(ventaMapper::entidadAResponse
                 ).toList();
     }
 
@@ -60,11 +56,7 @@ public class VentaServiceImpl implements VentaService {
     public List<VentaResponse> listarCanceladas() {
         log.info("Listando ventas canceladas");
         return ventaRepository.findAllActivasOrderedByIdSucursal(EstadoVenta.CANCELADA)
-                .stream().map(venta ->
-                        ventaMapper.entidadAResponse(
-                                venta,
-                                venta.calcularTotal()
-                        )
+                .stream().map(ventaMapper::entidadAResponse
                 ).toList();
     }
 
@@ -95,42 +87,40 @@ public class VentaServiceImpl implements VentaService {
 
             venta.agregarDetalle(detalleVentaMapper.requestAEntidad(detalleRequest, venta, producto, detalleRequest.cantidadProducto()));
             log.info("Actualizando el stock de los productos");
-            producto.actualizar(
-                    producto.getNombre(),
-                    producto.getCategoria(),
-                    producto.getPrecio(),
+            producto.descontarCantidad(
                     producto.getCantidad() - Integer.parseInt(detalleRequest.cantidadProducto().toString())
             );
             productoRepository.save(producto);
         });
 
-            log.info("Venta registrada");
+        log.info("Venta registrada");
         Venta ventaGuardada = ventaRepository.save(venta);
-        return ventaMapper.entidadAResponse(ventaGuardada, ventaGuardada.calcularTotal());
+        return ventaMapper.entidadAResponse(ventaGuardada);
     }
 
     @Override
     public VentaResponse cancelar(Long id) {
         log.info("Cancelando venta con id: {}", id);
+
         Venta venta = ventaRepository.findById(id)
                 .orElseThrow(() -> new
                         RecursoNoEncontradoException("La venta no existe"));
+
         venta.getDetalleVentas().forEach(detVenta -> {
             Producto producto = productoRepository.findById(detVenta.getProducto().getId())
                     .orElseThrow(() -> new RecursoNoEncontradoException("Producto no encontrado"));
-            producto.actualizar(
-                    detVenta.getProducto().getNombre(),
-                    detVenta.getProducto().getCategoria(),
-                    detVenta.getProducto().getPrecio(),
-                    detVenta.getProducto().getCantidad() + detVenta.getCantidadProducto()
-            );
+
+
+            producto.aumentarCantidad(detVenta.getProducto().getCantidad() + detVenta.getCantidadProducto());
+
             log.info("Cancellando el stock de los productos");
             productoRepository.save(producto);
         });
         venta.cancelar();
+
         log.info("Venta cancelada");
         ventaRepository.save(venta);
-        return ventaMapper.entidadAResponse(venta, venta.calcularTotal());
+        return ventaMapper.entidadAResponse(venta);
     }
 
     @Override
@@ -143,21 +133,22 @@ public class VentaServiceImpl implements VentaService {
                 .forEach(
                         ven ->
                         {
-                            if (!reporte.isEmpty() && reporte.get(reporte.size() - 1).nombre().equalsIgnoreCase(ven.getSucursal().getNombre())) {
+                            if (!reporte.isEmpty() &&
+                                    reporte.get(reporte.size() - 1).idSucursal()
+                                            .equals(ven.getSucursal().getId())) {
                                 ReporteVentasSucursalResponse anterior = reporte.get(reporte.size() - 1);
                                 reporte.remove(reporte.size() - 1);
-                                ReporteVentasSucursalResponse nuevo = new ReporteVentasSucursalResponse(
+                                reporte.set(reporte.size() - 1, generarNuevoReporte(
                                         anterior.idSucursal(),
                                         anterior.nombre(),
                                         ven.calcularTotal().add(anterior.totalFacturado()),
                                         ven.getDetalleVentas().stream()
                                                 .mapToInt(DetalleVenta::getCantidadProducto)
                                                 .sum() + anterior.cantidadProdVendidos()
-                                );
-                                reporte.add(nuevo);
+                                ));
                                 return;
                             }
-                            reporte.add(new ReporteVentasSucursalResponse(
+                            reporte.add(generarNuevoReporte(
                                     ven.getSucursal().getId(),
                                     ven.getSucursal().getNombre(),
                                     ven.calcularTotal(),
@@ -169,5 +160,14 @@ public class VentaServiceImpl implements VentaService {
                 );
         log.info("Reporte generado");
         return reporte;
+    }
+
+    private ReporteVentasSucursalResponse generarNuevoReporte(Long idSucursal, String nombre, BigDecimal totalVentas, Integer cantidadProducto) {
+        return new ReporteVentasSucursalResponse(
+                idSucursal,
+                nombre,
+                totalVentas,
+                cantidadProducto
+        );
     }
 }

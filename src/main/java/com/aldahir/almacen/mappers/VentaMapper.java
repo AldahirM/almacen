@@ -28,7 +28,7 @@ public class VentaMapper {
                 .build();
     }
 
-    public VentaResponse entidadAResponse(Venta venta, BigDecimal total) {
+    public VentaResponse entidadAResponse(Venta venta) {
         if (venta == null) return null;
 
         return new VentaResponse(
@@ -37,7 +37,7 @@ public class VentaMapper {
                 venta.getEstadoVenta().toString(),
                 sucursalMapper.entidadAResponse(venta.getSucursal()),
                 venta.getDetalleVentas().stream().map(detalleVentaMapper::entidadAResponse).toList(),
-                total != null ? total : venta.calcularTotal()
+                venta.calcularTotal()
         );
     }
 
